@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
       # Specify the provider as libvirt (KVM)
       vm.vm.provider "libvirt" do |v|
         v.memory = 2048    # Set RAM in MB
-        v.cpus = 1         # Set number of CPUs
+        v.cpus = 2         # Set number of CPUs
         v.disk_bus = "virtio"  # Use virtio for better performance
         v.nic_model_type = "virtio"  # Use virtio network interface
         v.storage :file, size: "10G", type: "qcow2", bus: "virtio"

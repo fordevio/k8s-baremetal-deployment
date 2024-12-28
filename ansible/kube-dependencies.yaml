@@ -1,0 +1,65 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+   - name: create containerd config directory
+     file: 
+        path: /etc/containerd
+        state: directory
+
+   - name: configure containerd to use systemd cgroup driver
+     copy:
+        dest: "/etc/containerd/config.toml"
+        content: |
+          [plugins."io.containerd.grpc.v1.cri".containerd]
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+                SystemdCgroup = true
+
+   - name: install containerd
+     apt:
+        name: containerd
+        state: present
+        update_cache: true
+
+   - name: start and enable containerd service
+     systemd:
+        name: containerd
+        enabled: yes
+        state: started
+
+   - name: install APT Transport HTTPS
+     apt:
+       name: apt-transport-https
+       state: present
+
+   - name: add Kubernetes apt-key
+     apt_key:
+       url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+       state: present
+
+   - name: add Kubernetes' APT repository
+     apt_repository:
+      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+      filename: 'kubernetes'
+
+   - name: install kubelet
+     apt:
+       name: kubelet=1.22.4-00
+       state: present
+       update_cache: true
+
+   - name: install kubeadm
+     apt:
+       name: kubeadm=1.22.4-00
+       state: present
+
+- hosts: control_plane
+  become: yes
+  tasks:
+   - name: install kubectl
+     apt:
+       name: kubectl=1.22.4-00
+       state: present
+       force: yes
