@@ -1,0 +1,117 @@
+Vagrant.configure("2") do |config|
+  # Use the Ubuntu 20.04 box
+  config.vm.box = "generic/ubuntu2004"
+
+  # Loop to create three VMs
+ 
+    config.vm.define "control-plane" do |vm|
+      vm.vm.hostname = "control-plane"
+
+      # Networking (optional: configure a private network)
+      vm.vm.network "private_network", ip: "192.168.56.101" # Private network for VM-to-VM communication
+      vm.vm.network "public_network", bridge: "virbr0" , dev: "wlo1"      #
+
+      # Specify the provider as libvirt (KVM)
+      vm.vm.provider "libvirt" do |v|
+        v.memory = 2048    # Set RAM in MB
+        v.cpus = 1         # Set number of CPUs
+        v.disk_bus = "virtio"  # Use virtio for better performance
+        v.nic_model_type = "virtio"  # Use virtio network interface
+        v.storage :file, size: "10G", type: "qcow2", bus: "virtio"
+
+      vm.vm.provision "shell", inline: <<-SHELL
+        echo "192.168.56.101 control-plane" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 node-vm1" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 node-vm2" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 nfs-vm" | sudo tee -a /etc/hosts
+      SHELL
+  
+      end
+
+      # Optional shell provisioning to customize the VM
+
+
+    end
+    config.vm.define "node-vm1" do |vm|
+      vm.vm.hostname = "node-vm1"
+
+      # Networking (optional: configure a private network)
+      vm.vm.network "private_network", ip: "192.168.56.102" # Private network for VM-to-VM communication
+      vm.vm.network "public_network", bridge: "virbr0"  , dev: "wlo1"     #
+
+      # Specify the provider as libvirt (KVM)
+      vm.vm.provider "libvirt" do |v|
+        v.memory = 2048    # Set RAM in MB
+        v.cpus = 1         # Set number of CPUs
+        v.disk_bus = "virtio"  # Use virtio for better performance
+        v.nic_model_type = "virtio"  # Use virtio network interface
+        v.storage :file, size: "10G", type: "qcow2", bus: "virtio"
+
+      vm.vm.provision "shell", inline: <<-SHELL
+        echo "192.168.56.101 control-plane" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 node-vm1" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 node-vm2" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 nfs-vm" | sudo tee -a /etc/hosts
+      SHELL
+      end
+
+      # Optional shell provisioning to customize the VM
+      
+
+    end
+    config.vm.define "node-vm2" do |vm|
+      vm.vm.hostname = "node-vm2"
+
+      # Networking (optional: configure a private network)
+      vm.vm.network "private_network", ip: "192.168.56.103" # Private network for VM-to-VM communication
+      vm.vm.network "public_network", bridge: "virbr0" , dev: "wlo1"      #
+
+      # Specify the provider as libvirt (KVM)
+      vm.vm.provider "libvirt" do |v|
+        v.memory = 2048    # Set RAM in MB
+        v.cpus = 1         # Set number of CPUs
+        v.disk_bus = "virtio"  # Use virtio for better performance
+        v.nic_model_type = "virtio"  # Use virtio network interface
+        v.storage :file, size: "10G", type: "qcow2", bus: "virtio"
+      
+      vm.vm.provision "shell", inline: <<-SHELL
+        echo "192.168.56.101 control-plane" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 node-vm1" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 node-vm2" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 nfs-vm" | sudo tee -a /etc/hosts
+      SHELL
+      end
+
+      # Optional shell provisioning to customize the VM
+      
+
+    end
+    config.vm.define "nfs-vm" do |vm|
+      vm.vm.hostname = "nfs-vm"
+
+      # Networking (optional: configure a private network)
+      vm.vm.network "private_network", ip: "192.168.56.104" # Private network for VM-to-VM communication
+      vm.vm.network "public_network", bridge: "virbr0" , dev: "wlo1"      #
+
+      # Specify the provider as libvirt (KVM)
+      vm.vm.provider "libvirt" do |v|
+        v.memory = 2048    # Set RAM in MB
+        v.cpus = 1         # Set number of CPUs
+        v.disk_bus = "virtio"  # Use virtio for better performance
+        v.nic_model_type = "virtio"  # Use virtio network interface
+        v.storage :file, size: "20G", type: "qcow2", bus: "virtio"
+
+      vm.vm.provision "shell", inline: <<-SHELL
+        echo "192.168.56.101 control-plane" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 node-vm1" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 node-vm2" | sudo tee -a /etc/hosts
+        echo "192.168.56.102 nfs-vm" | sudo tee -a /etc/hosts
+      SHELL
+      end
+
+      # Optional shell provisioning to customize the VM
+      
+
+    end
+  
+end
