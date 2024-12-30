@@ -52,12 +52,27 @@
                 curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | apt-key add -
                 curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
 
-   - name: Install cri-o and cri-o tools
-     shell: |
-               sudo apt-get update
-               sudo apt-get install cri-o cri-o-runc cri-tools -y
-               sudo systemctl daemon-reload
-               sudo systemctl enable crio --now
+   - name: Update the apt cache
+     apt:
+        update_cache: yes
+
+   - name: Install cri-o and related tools
+     apt:
+        name:
+          - cri-o
+          - cri-o-runc
+          - cri-tools
+        state: present
+
+   - name: Reload systemd daemon
+     command: systemctl daemon-reload
+
+   - name: Enable and start the cri-o service
+     systemd:
+        name: crio
+        enabled: yes
+        state: started  
+
 
    - name: Remove swapfile from /etc/fstab
      mount:
