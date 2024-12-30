@@ -1,65 +1,118 @@
 ---
-- hosts: all
+- hosts: control_plane, workers
   become: yes
   tasks:
-   - name: create containerd config directory
-     file: 
-        path: /etc/containerd
-        state: directory
-
-   - name: configure containerd to use systemd cgroup driver
-     copy:
-        dest: "/etc/containerd/config.toml"
-        content: |
-          [plugins."io.containerd.grpc.v1.cri".containerd]
-            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-                SystemdCgroup = true
-
-   - name: install containerd
+   - name: "Update cache & Full system update"
      apt:
-        name: containerd
-        state: present
-        update_cache: true
+      update_cache: true
+      cache_valid_time: 3600
+      force_apt_get: true
 
-   - name: start and enable containerd service
-     systemd:
-        name: containerd
-        enabled: yes
-        state: started
+   - name: Create CRI-O config file
+     file:
+      path: "/etc/modules-load.d/crio.conf"
+      state: "touch"
 
-   - name: install APT Transport HTTPS
-     apt:
-       name: apt-transport-https
-       state: present
+   - name: add modules in conf file
+     blockinfile:
+        path: "/etc/modules-load.d/crio.conf"
+        block: |
+            overlay
+            br_netfilter
 
-   - name: add Kubernetes apt-key
+   - name: Enable sysctl params
+     file:
+         path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+         state: "touch"
+
+   - name: add configuration
+     blockinfile:
+         path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+         block: |
+                net.bridge.bridge-nf-call-iptables = 1
+                net.ipv4.ip_forward = 1
+                net.bridge.bridge-nf-call-ip6tables = 1
+
+   - name: enable overlayFS & VxLan pod communication
+     shell: |
+               sudo modprobe overlay
+               sudo modprobe br_netfilter
+
+   - name: Reload parameters
+     command: sudo sysctl --system
+
+   - name: enable cri-repo
+     environment:
+          OS: xUbuntu_20.04
+          VERSION: 1.23
+     shell: |
+                echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+                echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.list
+
+                curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | apt-key add -
+                curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
+
+   - name: Install cri-o and cri-o tools
+     shell: |
+               sudo apt-get update
+               sudo apt-get install cri-o cri-o-runc cri-tools -y
+               sudo systemctl daemon-reload
+               sudo systemctl enable crio --now
+
+   - name: Remove swapfile from /etc/fstab
+     mount:
+      name: "{{ item }}"
+      fstype: swap
+      state: absent
+     with_items:
+      - swap
+      - none
+
+   - name: Disable swap
+     command: swapoff -a
+     when: ansible_swaptotal_mb > 0
+
+
+  
+   - name: Add kubernetes key
      apt_key:
-       url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+       keyserver: keyserver.ubuntu.com
+       id: B53DC80D13EDEF05
        state: present
 
-   - name: add Kubernetes' APT repository
+   - name: Add kubernetes repo
      apt_repository:
-      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+      repo: deb http://mirror.reenigne.net/apt.kubernetes.io/ kubernetes-xenial main
       state: present
-      filename: 'kubernetes'
+      filename: kubernetes
 
    - name: install kubelet
      apt:
-       name: kubelet=1.22.4-00
+       name: kubelet=1.32.0-00
        state: present
        update_cache: true
 
+   - name: hold kubelet package to prevent updates
+     command: apt-mark hold kubelet
+
    - name: install kubeadm
      apt:
-       name: kubeadm=1.22.4-00
+       name: kubeadm=1.32.0-00
        state: present
+   - name: hold kubeadm package to prevent updates
+     command: apt-mark hold kubeadm
 
-- hosts: control_plane
-  become: yes
-  tasks:
-   - name: install kubectl
-     apt:
-       name: kubectl=1.22.4-00
-       state: present
-       force: yes
+   - name: Ensure /etc/default/kubelet exists
+     file:
+        path: /etc/default/kubelet
+        state: touch
+   - name: Configure node ip
+     lineinfile:
+      path: /etc/default/kubelet
+      line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
+
+   - name: Restart kubelet
+     service:
+      name: kubelet
+      daemon_reload: yes
+      state: restarted

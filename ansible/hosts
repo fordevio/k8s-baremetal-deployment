@@ -1,12 +1,12 @@
 [control_plane]
-control1 ansible_host=192.168.56.101 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_ssh_pass=vagrant
+control1 ansible_host=192.168.56.101 node_ip=192.168.56.101 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_ssh_pass=vagrant
 
 [workers]
-worker1 ansible_host=192.168.56.102 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_ssh_pass=vagrant
-worker2 ansible_host=192.168.56.103 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_ssh_pass=vagrant
+worker1 ansible_host=192.168.56.102 node_ip=192.168.56.102 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_ssh_pass=vagrant
+worker2 ansible_host=192.168.56.103 node_ip=192.168.56.102 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_ssh_pass=vagrant
 
 [nfs_server]
-nfs1 ansible_host=192.168.56.104 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_ssh_pass=vagrant
+nfs1 ansible_host=192.168.56.104 node_ip=192.168.56.104 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_ssh_pass=vagrant
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3

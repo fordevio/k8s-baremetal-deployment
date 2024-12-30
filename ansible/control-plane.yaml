@@ -1,0 +1,33 @@
+---
+- hosts: control_plane
+  become: yes
+  tasks:
+
+    - name: install kubectl
+      apt:
+       name: kubectl=1.32.0-00
+       state: present
+       force: yes
+
+    - name: hold kubectl package to prevent updates
+      command: apt-mark hold kubectl
+
+
+    - name: Initialize the Kubernetes cluster using kubeadm
+      shell: kubeadm init --apiserver-advertise-address="192.168.50.10" --apiserver-cert-extra-sans="192.168.50.10" --cri-socket=/var/run/crio/crio.sock  --ignore-preflight-errors  --pod-network-cidr=192.168.0.0/16 >> cluster_initialized.txt
+      args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+    - name: create .kube directory
+      become: yes
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    - name: copy admin.conf to user's kube config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ubuntu/.kube/config
+        remote_src: yes
+        owner: ubuntu
