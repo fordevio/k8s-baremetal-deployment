@@ -88,7 +88,7 @@
 
    - name: install kubelet
      apt:
-       name: kubelet=1.32.0-00
+       name: kubelet
        state: present
        update_cache: true
 
@@ -97,7 +97,7 @@
 
    - name: install kubeadm
      apt:
-       name: kubeadm=1.32.0-00
+       name: kubeadm
        state: present
    - name: hold kubeadm package to prevent updates
      command: apt-mark hold kubeadm
