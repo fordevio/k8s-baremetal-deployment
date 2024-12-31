@@ -101,11 +101,15 @@
       state: present
       filename: kubernetes
 
+   - name: Update the apt cache
+     apt:
+        update_cache: yes
+
    - name: install kubelet
      apt:
        name: kubelet
        state: present
-       update_cache: true
+
 
    - name: hold kubelet package to prevent updates
      command: apt-mark hold kubelet
@@ -114,6 +118,7 @@
      apt:
        name: kubeadm
        state: present
+       
    - name: hold kubeadm package to prevent updates
      command: apt-mark hold kubeadm
 
@@ -121,6 +126,7 @@
      file:
         path: /etc/default/kubelet
         state: touch
+
    - name: Configure node ip
      lineinfile:
       path: /etc/default/kubelet

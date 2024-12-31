@@ -14,10 +14,19 @@
 
 
     - name: Initialize the Kubernetes cluster using kubeadm
-      shell: kubeadm init --apiserver-advertise-address="192.168.50.10" --apiserver-cert-extra-sans="192.168.50.10" --cri-socket=/var/run/crio/crio.sock  --ignore-preflight-errors  --pod-network-cidr=192.168.0.0/16 >> cluster_initialized.txt
+      shell: kubeadm init  --cri-socket=unix:///var/run/crio/crio.sock --ignore-preflight-errors=all  --pod-network-cidr=192.168.0.0/16 >> cluster_initialized.txt
       args:
         chdir: $HOME
         creates: cluster_initialized.txt
+
+    - name: Create the .kube directory
+      file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
     - name: create .kube directory
       become: yes
       file:
