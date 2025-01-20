@@ -1,0 +1,26 @@
+- name: Creating ceph cluster
+  hosts: nfs_server
+  become: true
+  tasks:
+    - name: Install snapd 
+      apt:
+        name: snapd
+        state: present
+        update_cache: yes
+
+    - name: Install microceph using snapd
+      command: snap install microceph
+      args:
+        creates: /snap/bin/microceph
+    
+    - name: Create the ceph configuration directory
+      ansible.builtin.file:
+        path: /etc/ceph
+        state: directory
+        mode: '0755'
+
+    - name: Initialize the Microceph cluster (Bootstrap)
+      command: microceph cluster bootstrap
+      args:
+        creates: /etc/ceph/ceph.conf
+      register: bootstrap_output

@@ -40,6 +40,5 @@ resource "helm_release" "cilium" {
     name="gatewayAPI.enabled"
     value = true 
   }
-  
 
 }
