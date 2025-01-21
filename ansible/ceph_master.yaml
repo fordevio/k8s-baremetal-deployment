@@ -97,9 +97,9 @@
       ansible.builtin.command:
         cmd: rbd pool init myblockpool
 
-    - name: Create an RBD image in the pool
-      ansible.builtin.command:
-        cmd: rbd create --size 102400 myblockpool/rbd
+    # - name: Create an RBD image in the pool
+    #   ansible.builtin.command:
+    #     cmd: rbd create --size 102400 myblockpool/rbd
 
 
 
