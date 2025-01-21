@@ -19,8 +19,88 @@
         state: directory
         mode: '0755'
 
+    - name: Check if Ceph is already initialized
+      ansible.builtin.stat:
+        path: /etc/ceph/ceph.conf
+      register: ceph_conf_status
+
+
     - name: Initialize the Microceph cluster (Bootstrap)
       command: microceph cluster bootstrap
       args:
         creates: /etc/ceph/ceph.conf
       register: bootstrap_output
+      when: not ceph_conf_status.stat.exists
+    
+
+    - name: Check if /etc/ceph/ceph.conf exists
+      ansible.builtin.stat:
+        path: /etc/ceph/ceph.conf
+      register: ceph_conf_status
+
+    - name: Create /etc/ceph/ceph.conf if absent
+      ansible.builtin.file:
+        path: /etc/ceph/ceph.conf
+        state: touch
+        owner: vagrant
+        group: vagrant
+        mode: '0644'
+      when: not ceph_conf_status.stat.exists
+
+    - name: Add default content to /etc/ceph/ceph.conf
+      ansible.builtin.copy:
+        content: |
+          [global]
+          fsid = b5c607e9-2f47-4f9b-8eae-6b2beabeb77f
+          mon_host = 192.168.56.104
+          auth_client_required = cephx
+          auth_cluster_required = cephx
+          auth_service_required = cephx
+        dest: /etc/ceph/ceph.conf
+        owner: vagrant
+        group: vagrant
+        mode: '0644'
+      when: not ceph_conf_status.stat.exists
+
+    - name: Ceph keyring file
+      shell: ceph auth get-or-create client.admin mon 'allow *' osd 'allow *' mds 'allow *' > /etc/ceph/ceph.client.admin.keyring
+      args:
+        creates: /etc/ceph/ceph.client.admin.keyring
+
+
+    - name: Remove Crush rule 1
+      command: microceph.ceph osd crush rule rm replicated_rule
+        
+    - name: Remove Crush rule 2
+      command: microceph.ceph osd crush rule create-replicated single default osd
+
+
+
+    - name: Add osd 
+      ansible.builtin.command:
+        cmd: microceph disk add /dev/vdb --wipe 
+
+    - name: Create a Ceph pool
+      ansible.builtin.command:
+        cmd: ceph osd pool create myblockpool 8 
+
+    - name: Change pool size 
+      command: sudo ceph config set global  mon_allow_pool_size_one true
+
+    - name: change pool size 2
+      command: ceph osd pool set myblockpool min_size 1
+
+    - name: change pool size 3
+      command: ceph osd pool set myblockpool size 1 --yes-i-really-mean-it
+
+    - name: Enable the pool for RBD
+      ansible.builtin.command:
+        cmd: rbd pool init myblockpool
+
+    - name: Create an RBD image in the pool
+      ansible.builtin.command:
+        cmd: rbd create --size 102400 myblockpool/rbd
+
+
+
+    
